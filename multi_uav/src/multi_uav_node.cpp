@@ -21,21 +21,21 @@ using namespace ros;
 
 //  global var
 mavros_msgs::State current_state;
-geometry_msgs::PoseStamped local_position;
+geometry_msgs::PoseStamped local_position,uav1_local_position,uav2_local_position;
 geometry_msgs::PoseStamped uav1_cur_pos;
 std_msgs::Float32MultiArray uav1_tar_ID;
-float uav1_tar[2];
+float uav1_tar[3];
 std_msgs::Int8 uav1_prior_ID;
 std_msgs::Int16MultiArray uav1_switch_flag,uav1_counter;
-int uav1_swfg[2];
+int uav1_swfg[3];
 int uav1_cnt[4]={-1,-1,-1,-1};
 geometry_msgs::PoseStamped uav2_cur_pos;
 std_msgs::Float32MultiArray uav2_tar_ID;
-float uav2_tar[2];
+float uav2_tar[3];
 std_msgs::Int8 uav2_prior_ID;
 std_msgs::Int16MultiArray uav2_switch_flag,uav2_counter;
 int uav2_cnt[4]={-1,-1,-1,-1};
-int uav2_swfg[2];
+int uav2_swfg[3];
 class multiUAV{
     public:
 
@@ -48,6 +48,19 @@ class multiUAV{
 	double Arrive = 0.2; //.
 	double Zik = 50;    //
 	double u   = 0.1;    //
+	
+	
+//	double Rc       =  20;  //
+//	double Rswitch  =  20;  //
+//	double Rstop    =  3;  //
+//	double Rattr    =  12;  //
+// 	double d_des    =  30;  //
+//	double d0       =  1.01;  //
+//	double Arrive = 0.2; //.
+//	double Zik = 5;    //
+//	double u   = 0.2;    //
+	
+	
 
 	double pos[N][2];// current position
 	double tar[N][2];//destination
@@ -75,7 +88,7 @@ class multiUAV{
         return sqrt(pow(x,2)+pow(y,2));	
     } 
 
-    int any(int a[], int NUM)   //¿ÕŒ¯·µ»Ø1£»·Ç¿Õ·µ»Ø0£» 
+    int any(int a[], int NUM)   //�ռ�����1���ǿշ���0�� 
     {
             int noDK = 1;
             for (int j=0;j<NUM;j++)
@@ -343,7 +356,7 @@ class multiUAV{
 		for(int ll=0;ll<Number;ll++)
 		{
 		
-		if(switchflag[ll][0] == 1) //È·ï¿œï¿œï¿œï¿œï¿œï¿œï¿œï¿œÏµ
+		if(switchflag[ll][0] == 1) //ȷ��������ϵ
 		{
 			if(switchflag[switchflag[ll][1]][0]==888)
 			{
@@ -396,7 +409,7 @@ class multiUAV{
 
 
 		
-		if(switchflag[i][0] == 1 ) //ï¿œï¿œï¿œï¿œï¿œï¿œï¿œË»ï¿œï¿œï¿œï¿œ
+		if(switchflag[i][0] == 1 ) //�������˻����
 		{
 			if(switchflag[switchflag[i][1]][1] == i && switchflag[switchflag[i][1]][0] == 2)
 			{	
@@ -440,11 +453,24 @@ class multiUAV{
 				
 			}
 		}
+		
+		
+//		if(Counter == 4 && i == 0)
+//		{
+//			cout<<"hello"<<endl;
+//			cout<<switchflag[0][0]<<" "<<switchflag[0][1]<<endl;
+//			cout<<switchflag[1][0]<<" "<<switchflag[1][1]<<endl;
+//			cout<<switchflag[2][0]<<" "<<switchflag[2][1]<<endl;
+//			cout<<tar[i][0]<<" "<<tar[i][1]<<endl;
+//			cout<<"hello"<<endl;
+//			cout<<endl;
+//		}
+
 	
 	}
 	void veloupdate(double (*pos_use)[2],double(*tar_use)[2], double(*velo_use)[2], int Number, double Zik, double u)
 	{
-		double Zikuse = Zik;//ï¿œï¿œï¿œï¿œÎ»ï¿œï¿œ
+		double Zikuse = Zik;//����λ��
 
 		for(int j=0; j<Number; j++)
 		{
@@ -458,7 +484,7 @@ class multiUAV{
 			}
 		}
 		
-		if(dist(pos_use[i],tar_use[i]) <= Zikuse ) //ï¿œï¿œï¿œï¿œÒªï¿œï¿œï¿œï¿œï¿œï¿œ  ï¿œÙ¶Èžï¿œï¿œï¿œ 
+		if(dist(pos_use[i],tar_use[i]) <= Zikuse ) //����Ҫ������  �ٶȸ��� 
 		{
 			velo_use[i][0] = tar_use[i][0] - pos_use[i][0];
 			velo_use[i][1] = tar_use[i][1] - pos_use[i][1]; 
@@ -478,7 +504,7 @@ class multiUAV{
 //		cout<<"velo_use"<<velo[i][0]<<" "<<velo[i][1]<<endl;
 //		}
 		
-		for(int j=0;j<Number;j++)   //ï¿œÙ¶ï¿œ=0ï¿œï¿œï¿œï¿œï¿œï¿œ 1
+		for(int j=0;j<Number;j++)   //�ٶ�=0������ 1
 		{
 			if (i != j )
 			{
@@ -490,7 +516,7 @@ class multiUAV{
 				}
 			}
 		}
-		for(int j=0;j<Number;j++)   //ï¿œÙ¶ï¿œ=0ï¿œï¿œï¿œï¿œï¿œï¿œ 2
+		for(int j=0;j<Number;j++)   //�ٶ�=0������ 2
 		{
 			if (Ek[i][j] != 888)
 			{
@@ -536,6 +562,12 @@ void state_cb(const mavros_msgs::State::ConstPtr& msg){
 void local_position_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
     local_position = *msg;
 }
+void uav1_local_position_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
+    uav1_local_position = *msg;
+}
+void uav2_local_position_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
+    uav2_local_position = *msg;
+}
 void uav1_cur_pos_cb(const geometry_msgs::PoseStamped::ConstPtr& msg){
     uav1_cur_pos = *msg;
 }
@@ -548,7 +580,7 @@ void uav1_prior_ID_cb(const std_msgs::Int8::ConstPtr& msg){
 }
 void uav1_switch_flag_cb(const std_msgs::Int16MultiArray::ConstPtr& msg){
 	uav1_switch_flag = *msg;
-	for(int i=0;i<2;i++) uav1_swfg[i]=uav1_switch_flag.data[i];
+	for(int i=0;i<3;i++) uav1_swfg[i]=uav1_switch_flag.data[i];
 }
 void uav1_counter_cb(const std_msgs::Int16MultiArray::ConstPtr& msg){
 	uav1_counter = *msg;
@@ -566,7 +598,7 @@ void uav2_prior_ID_cb(const std_msgs::Int8::ConstPtr& msg){
 }
 void uav2_switch_flag_cb(const std_msgs::Int16MultiArray::ConstPtr& msg){
 	uav2_switch_flag = *msg;
-	for(int i=0;i<2;i++) uav2_swfg[i]=uav2_switch_flag.data[i];
+	for(int i=0;i<3;i++) uav2_swfg[i]=uav2_switch_flag.data[i];
 
 }
 void uav2_counter_cb(const std_msgs::Int16MultiArray::ConstPtr& msg){
@@ -605,6 +637,55 @@ int main(int argc, char **argv)
 	// destination init
 	uav_tar_init(multiUAV0);uav_tar_init(multiUAV1);uav_tar_init(multiUAV2);
 	local_error le(0,0,0);
+	// 集中式控制
+	multiUAV uav0(0),uav1(1),uav2(2);
+	//uav0
+	//pos
+	float s[6]={0,0,400,0,800,0};
+	float d[6]={800,800,400,800,0,800};
+	uav0.pos[0][0]=s[0];
+	uav0.pos[0][1]=s[1];
+	uav0.pos[1][0]=s[2];
+	uav0.pos[1][1]=s[3];
+	uav0.pos[2][0]=s[4];
+	uav0.pos[2][1]=s[5];
+	//tar
+	uav0.tar[0][0]=d[0];
+	uav0.tar[0][1]=d[1];
+	uav0.tar[1][0]=d[2];
+	uav0.tar[1][1]=d[3];
+	uav0.tar[2][0]=d[4];
+	uav0.tar[2][1]=d[5];
+	//uav1
+	//pos
+	uav1.pos[0][0]=s[0];
+	uav1.pos[0][1]=s[1];
+	uav1.pos[1][0]=s[2];
+	uav1.pos[1][1]=s[3];
+	uav1.pos[2][0]=s[4];
+	uav1.pos[2][1]=s[5];
+	//tar
+	uav1.tar[0][0]=d[0];
+	uav1.tar[0][1]=d[1];
+	uav1.tar[1][0]=d[2];
+	uav1.tar[1][1]=d[3];
+	uav1.tar[2][0]=d[4];
+	uav1.tar[2][1]=d[5];
+	//uav2
+	//pos
+	uav2.pos[0][0]=s[0];
+	uav2.pos[0][1]=s[1];
+	uav2.pos[1][0]=s[2];
+	uav2.pos[1][1]=s[3];
+	uav2.pos[2][0]=s[4];
+	uav2.pos[2][1]=s[5];
+	//tar
+	uav2.tar[0][0]=d[0];
+	uav2.tar[0][1]=d[1];
+	uav2.tar[1][0]=d[2];
+	uav2.tar[1][1]=d[3];
+	uav2.tar[2][0]=d[4];
+	uav2.tar[2][1]=d[5];
     ros::init(argc, argv, "offb_node0");
     ros::NodeHandle nh;
 
@@ -612,14 +693,24 @@ int main(int argc, char **argv)
             ("/uav0/mavros/state", 10, state_cb);
 	ros::Subscriber local_position_sub = nh.subscribe<geometry_msgs::PoseStamped>
 			("/uav0/mavros/local_position/pose",10,local_position_cb);
+	ros::Subscriber uav1_local_position_sub = nh.subscribe<geometry_msgs::PoseStamped>
+			("/uav1/mavros/local_position/pose",10,uav1_local_position_cb);
+	ros::Subscriber uav2_local_position_sub = nh.subscribe<geometry_msgs::PoseStamped>
+			("/uav2/mavros/local_position/pose",10,uav2_local_position_cb);
     ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
             ("/uav0/mavros/setpoint_position/local", 10);
+	ros::Publisher drone1_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
+            ("/drone1/mavros/setpoint_position/local", 10);
+	ros::Publisher drone2_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
+            ("/drone2/mavros/setpoint_position/local", 10);
     ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>
             ("/uav0/mavros/cmd/arming");
     ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>
             ("/uav0/mavros/set_mode");
 
 	// algotithm communication
+	// centralization
+	geometry_msgs::PoseStamped drone1,drone2;
 	// boradcast self position
 	ros::Publisher cur_pos_pub = nh.advertise<geometry_msgs::PoseStamped>
             ("/uav0/pos/global", 10);
@@ -697,12 +788,16 @@ int main(int argc, char **argv)
     arm_cmd.request.value = true;
 
     ros::Time last_request = ros::Time::now();
-	int main_cnt=0;
+	int main_cnt=0, sec_cnt=0;
+	int dist=INT_MAX;
+	local_error le1(400,0,0);
+	local_error le2(800,0,0);
     while(ros::ok()){
 		float store[20]={0};
 		auto st=clock();
 		//for takeoff
 		while(!arm_cmd.response.success&&(clock()-st)/CLOCKS_PER_SEC<60.0){
+			if(!ros::ok()) break;
 			if( current_state.mode != "OFFBOARD" &&
             (ros::Time::now() - last_request > ros::Duration(5.0))){
             if( set_mode_client.call(offb_set_mode) &&
@@ -723,132 +818,100 @@ int main(int argc, char **argv)
 			local_pos_pub.publish(pose);
 		}
 		
-		// get self position info
-		cout<<"local_position:"<<local_position.pose.position.x<<' '<<local_position.pose.position.y<<' '<<local_position.pose.position.z<<endl;
-		ROS_INFO("wait %d, hold on",main_cnt);
-		// main_cnt sync
-		do{
-			ros::spinOnce();
-			if(!ros::ok()) break;
-			counter.data[0]=main_cnt;
-			counter_pub.publish(counter);
-			local_pos_pub.publish(pose);
-		}while(uav1_cnt[0]!=main_cnt || uav2_cnt[0]!=main_cnt);
-		ROS_INFO("Main cnt sync%d",main_cnt);
-		// cur and pos sync
-		int uav1_p_cnt,uav2_p_cnt,uav1_t_cnt,uav2_t_cnt;
-		do{
-			ros::spinOnce();
-			if(!ros::ok()) break;
-			// communication for sending pos
-			cur_pos.pose.position.x=local_position.pose.position.x;
-			cur_pos.pose.position.y=local_position.pose.position.y;
-			cur_pos.pose.position.z=local_position.pose.position.z;
-			cur_pos.pose.orientation.x=main_cnt;
-			cur_pos_pub.publish(cur_pos);
-			// communication for getting pos
-			multiUAV0.pos[0][0]=cur_pos.pose.position.x;
-			multiUAV0.pos[0][1]=cur_pos.pose.position.y;
-			multiUAV0.pos[1][0]=uav1_cur_pos.pose.position.x;
-			multiUAV0.pos[1][1]=uav1_cur_pos.pose.position.y;
-			uav1_p_cnt=uav1_cur_pos.pose.orientation.x;
-			multiUAV0.pos[2][0]=uav2_cur_pos.pose.position.x;
-			multiUAV0.pos[2][1]=uav2_cur_pos.pose.position.y;
-			uav2_p_cnt=uav2_cur_pos.pose.orientation.x;
-			store[0]=multiUAV0.pos[0][0];
-			store[1]=multiUAV0.pos[0][1];
-			store[2]=multiUAV0.pos[1][0];
-			store[3]=multiUAV0.pos[1][1];
-			store[4]=multiUAV0.pos[2][0];
-			store[5]=multiUAV0.pos[2][1];
-			// for tar
-			tar_ID.data.push_back(multiUAV0.tar[0][0]);
-			tar_ID.data.push_back(multiUAV0.tar[0][1]);
-			tar_ID.data.push_back(main_cnt);
-			tar_ID_pub.publish(tar_ID);
-			tar_ID.data.clear();
-			multiUAV0.tar[1][0]=uav1_tar[0];
-			multiUAV0.tar[1][1]=uav1_tar[1];
-			uav1_t_cnt=uav1_tar[2];
-			multiUAV0.tar[2][0]=uav2_tar[0];
-			multiUAV0.tar[2][1]=uav2_tar[1];
-			uav2_t_cnt=uav2_tar[2];
-			store[6]=multiUAV0.tar[0][0];
-			store[7]=multiUAV0.tar[0][1];
-			store[8]=multiUAV0.tar[1][0];
-			store[9]=multiUAV0.tar[1][1];
-			store[10]=multiUAV0.tar[2][0];
-			store[11]=multiUAV0.tar[2][1];
-			counter.data[1]=main_cnt;
-			counter_pub.publish(counter);
-			local_pos_pub.publish(pose);
-		}while(uav1_p_cnt!=main_cnt || uav2_p_cnt!=main_cnt 
-				|| uav1_t_cnt!=main_cnt || uav2_t_cnt!=main_cnt);
-		ROS_INFO("Pos and tar sync%d",main_cnt);
-		/*
-		* 	solve with all information
-		*/
-		int * mysolve = multiUAV0.solve(multiUAV0.pos,multiUAV0.tar,N);
-		int allsolve[N][2];
-		//switch_Flag sync
-		do{
-			ros::spinOnce();
-			if(!ros::ok()) break;
-			// communication for sending switch_flag
-			switch_flag.data.push_back(mysolve[0]);
-			switch_flag.data.push_back(mysolve[1]);
-			switch_flag_pub.publish(switch_flag);
-			switch_flag.data.clear();
-			// communication for getting switchflag 
-			allsolve[0][0] = mysolve[0];
-			allsolve[0][1] = mysolve[1];
-			allsolve[1][0] = uav1_swfg[0];
-			allsolve[1][1] = uav1_swfg[1];
-			allsolve[2][0] = uav2_swfg[0];
-			allsolve[2][1] = uav2_swfg[1];
-			store[12]=allsolve[0][0];
-			store[13]=allsolve[0][1];
-			store[14]=allsolve[1][0];
-			store[15]=allsolve[1][1];
-			store[16]=allsolve[2][0];
-			store[17]=allsolve[2][1];
-			counter.data[2]=main_cnt;
-			counter_pub.publish(counter);
-			local_pos_pub.publish(pose);
-		}while(uav1_cnt[2]!=main_cnt || uav2_cnt[2]!=main_cnt);
-		ROS_INFO("Switch_flag sync%d",main_cnt);
-		// compute the exchange
-		multiUAV0.exchange(allsolve,multiUAV0.tar,N); 
-		// control signal and the  multiUAV0.pos will be update in veloupdate
-		multiUAV0.veloupdate(multiUAV0.pos,multiUAV0.tar, multiUAV0.velo, N, multiUAV0.Zik, multiUAV0.u);
-		// control //update 
-		cout<<"the uav is moving to next position"<<endl;
-		pose.pose.position.x=multiUAV0.pos[0][0];
-		pose.pose.position.y=multiUAV0.pos[0][1];
-		do{
-			local_pos_pub.publish(pose);
-			if(!ros::ok()) break;
-			ros::spinOnce();
-			float tmp=dis(multiUAV0.pos[0][0],local_position.pose.position.x,
-					multiUAV0.pos[0][1],local_position.pose.position.y);
-			if(tmp<1.0) break;
-		} while(1);
+			
+		int *mysolve0;
+		int *mysolve1;
+		int *mysolve2;
+	
+		double nowpos[N][2],nowtar[N][2];
+		if(main_cnt==0){
+			for(int j=0;j<2;j++)
+			{
+				nowpos[0][j] = uav0.pos[0][j];
+				nowpos[1][j] = uav1.pos[1][j];
+				nowpos[2][j] = uav2.pos[2][j];
+				
+				nowtar[0][j] = uav0.tar[0][j];
+				nowtar[1][j] = uav1.tar[1][j];
+				nowtar[2][j] = uav2.tar[2][j];
+				
+			}
+			mysolve0 = uav0.solve(nowpos,nowtar,N);
+			mysolve1 = uav1.solve(nowpos,nowtar,N);
+			mysolve2 = uav2.solve(nowpos,nowtar,N);
+			
+			int allsolve[N][2];
+			allsolve[0][0] = mysolve0[0];
+			allsolve[0][1] = mysolve0[1];
+			allsolve[1][0] = mysolve1[0];
+			allsolve[1][1] = mysolve1[1];
+			allsolve[2][0] = mysolve2[0];
+			allsolve[2][1] = mysolve2[1];
+			
+			cout<<uav0.Counter<<endl; 
+			cout<<allsolve[0][0]<<" "<<allsolve[0][1]<<" "<<endl;
+			cout<<allsolve[1][0]<<" "<<allsolve[1][1]<<" "<<endl;
+			cout<<allsolve[2][0]<<" "<<allsolve[2][1]<<" "<<endl;
+			cout<<endl; 
+
+			uav0.exchange(allsolve,nowtar,N);
+			uav1.exchange(allsolve,nowtar,N);
+			uav2.exchange(allsolve,nowtar,N);
+			
+			uav0.veloupdate(nowpos,nowtar, uav0.velo, N, uav0.Zik, uav0.u);
+			uav1.veloupdate(nowpos,nowtar, uav1.velo, N, uav1.Zik, uav1.u);
+			uav2.veloupdate(nowpos,nowtar, uav2.velo, N, uav2.Zik, uav2.u);
+			//
 		
-		//
-		cout<<"pos"<<endl;
-		for(int i=0;i<6;i++) cout<<store[i]<<' ';
+			pose.pose.position.x=uav0.pos[0][0]/100;
+			pose.pose.position.y=uav0.pos[0][1]/100;
+			drone1.pose.position.x = (uav1.pos[1][0]-le1.x)/100;
+			drone1.pose.position.y = (uav1.pos[1][1]-le1.y)/100;
+			drone1.pose.position.z = 2.5;
+			drone2.pose.position.x = (uav2.pos[2][0]-le2.x)/100;
+			drone2.pose.position.y = (uav2.pos[2][1]-le2.y)/100;
+			drone2.pose.position.z = 2.5;
+			cout<<"the uav is moving to next position"<<endl;
+			main_cnt=1;
+		}
+		// UAV1 // UAV2 & 3
+		float tmp1,tmp2,tmp3;
+		if(main_cnt==1){
+			local_pos_pub.publish(pose);
+			drone1_pos_pub.publish(drone1);
+			drone2_pos_pub.publish(drone2);
+
+			tmp1=dis(pose.pose.position.x,local_position.pose.position.x,
+				pose.pose.position.y,local_position.pose.position.y);
+			tmp2=dis(drone1.pose.position.x+le1.x/100,uav1_local_position.pose.position.x+le1.x/100,
+				drone1.pose.position.y+le1.y/100,uav1_local_position.pose.position.y+le1.y/100);
+			tmp3=dis(drone2.pose.position.x+le2.x/100,uav2_local_position.pose.position.x+le2.x/100,
+				drone2.pose.position.y+le2.y/100,uav2_local_position.pose.position.y+le2.y/100);
+			if(tmp1<0.2&&tmp2<0.2&&tmp3<0.2) main_cnt=0;
+			uav0.pos[0][0]=local_position.pose.position.x*100;
+			uav0.pos[0][1]=local_position.pose.position.y*100;
+			uav1.pos[1][0]=uav1_local_position.pose.position.x*100+le1.x;
+			uav1.pos[1][1]=uav1_local_position.pose.position.y*100+le1.y;
+			uav2.pos[2][0]=uav2_local_position.pose.position.x*100+le2.x;
+			uav2.pos[2][1]=uav2_local_position.pose.position.y*100+le2.y;
+			cout<<"tmp : "<<tmp1<<' '<<tmp2<<' '<<tmp3<<endl;	
+		}
+/////////////////////////////////////////////////////////////////////////////		 
+		cout<<uav0.Counter<<endl;
+		cout<<"NO.0="<<uav0.pos[0][0]<<' '<< uav0.pos[0][1]<<' '<<uav0.tar[0][0]<<' '<<uav0.tar[0][1]<<endl;
+		cout<<"NO.1="<<uav1.pos[1][0]<<' '<< uav1.pos[1][1]<<' '<<uav1.tar[1][0]<<' '<<uav1.tar[1][1]<<endl;
+		cout<<"NO.2="<<uav2.pos[2][0]<<' '<< uav2.pos[2][1]<<' '<<uav2.tar[2][0]<<' '<<uav2.tar[2][1]<<endl;
 		cout<<endl;
-		cout<<"tar"<<endl;	
-		for(int i=6;i<12;i++) cout<<store[i]<<' ';
-		cout<<endl;
-		cout<<"allsolve"<<endl;
-		for(int i=12;i<18;i++) cout<<store[i]<<' ';
-		cout<<endl;
-		// state update
-		main_cnt++;
-		// For spinOnce()
-        ros::spinOnce();
-        rate.sleep();
+/////////////////////////////////////////////////////////////////////////////
+		// dist = sqrt(pow(uav0.pos[0][0]-uav0.tar[0][0],2)+pow(uav0.pos[0][1]-uav0.tar[0][1],2))+
+		// 			sqrt(pow(uav1.pos[1][0]-uav1.tar[1][0],2)+pow(uav1.pos[1][1]-uav1.tar[1][1],2))+
+		// 			sqrt(pow(uav2.pos[2][0]-uav2.tar[2][0],2)+pow(uav2.pos[2][1]-uav2.tar[2][1],2));
+		// cout<<"dis for all uav = "<<dist<<endl<<endl;
+
+		ros::spinOnce();
+
+		rate.sleep();
+		
     }
 
     return 0;
